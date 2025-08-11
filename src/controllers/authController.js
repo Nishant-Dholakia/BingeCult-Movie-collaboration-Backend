@@ -1,7 +1,8 @@
 const User = require("../config/User");
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
-exports.RegisterUser = async (req, res) => {
+exports.registerUser = async (req, res) => {
 
     try
     {
@@ -11,10 +12,10 @@ exports.RegisterUser = async (req, res) => {
         if(duplicate) return res.status(400).json({ message: "Username or email already exists" });
 
         //password will be hashed in User model)
-        const newUser = new User({ username, email, password });
+        const newUser = new User({ username, email, password ,displayName:username});
         await newUser.save();
 
-        res.status(201).json({ message: "User registered successfully" });
+        res.status(201).json({ message: "User registered successfully..." });
     }
     catch(err)
     {
@@ -22,18 +23,18 @@ exports.RegisterUser = async (req, res) => {
     }
 }
 
-exports.LoginUser = async (req,res)=>{
+exports.loginUser = async (req,res)=>{
 
-    let {email, passowrd} = req.body;
+    let {email, password} = req.body;
 
-    const user = User.findOne({email});
+    const user = await User.findOne({email});
 
-    if(!user) res.status(404).json({message : "Invalid email or password..."});
+    if(!user) return res.status(404).json({message : "Invalid email or password..."});
 
     const isMatch = await user.matchPassword(password);
     if(!isMatch)
     {
-        res.status(404).json({message : "Invalid email or password..."});
+        return res.status(404).json({message : "Invalid email or password..."});
     }
 
     const token = jwt.sign(
@@ -52,7 +53,6 @@ exports.LoginUser = async (req,res)=>{
     res.json({
       message: "Login successful",
       user: {
-        id: user._id,
         username: user.username,
         email: user.email,
         displayName: user.username,
@@ -64,4 +64,22 @@ exports.LoginUser = async (req,res)=>{
 exports.logoutUser = (req, res) => {
   res.clearCookie("token");
   res.json({ message: "Logged out successfully" });
+};
+
+exports.getProfile = async (req, res) => {
+    try
+    {
+
+        const user = await User.findById(req.user._id).select('username email displayName -_id');
+        // console.log("\n\n\n\n" + user + "\n\n\n\n\n")
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        res.status(200).json({
+            message: "Profile fetched successfully",
+            user
+        });
+    }
+    catch(err)
+    {
+        res.status(500).json({message:"Error : " + err.message});
+    }
 };
