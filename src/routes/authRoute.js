@@ -11,6 +11,11 @@ router.post('/register', authController.registerUser);
 router.post('/login', authController.loginUser);
 router.post('/logout', authController.logoutUser);
 
-router.use(authMiddleware);
-router.get("/profile", authController.getProfile);
+router.get("/profile", authMiddleware(['password']), authController.getProfile);
+router.put("/profile", authMiddleware(['password']), authController.updateProfile);
+
+
+
+
+
 module.exports = router;

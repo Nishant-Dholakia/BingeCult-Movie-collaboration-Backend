@@ -23,6 +23,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     trim:true
     },
+    contact: {
+      countryCode: { type: String, match: /^\+\d{1,4}$/ , default:"+91"}, // like +91, +1, etc.
+      number: { type: String, match: /^\d{6,15}$/, default:"525255248" } // 6-15 digits
+  },
   avatar: String, // profile picture URL
   groups: [{
     type: mongoose.Schema.Types.ObjectId,

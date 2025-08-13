@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../config/User');
 
-module.exports = async (req, res, next) => {
+module.exports = (fieldsToExclude = ['password']) => async (req, res, next) => {
   try {
     // 1. Get token from cookies
     const token = req.cookies.token;
@@ -13,12 +13,15 @@ module.exports = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // 3. Find the user from decoded.id
-    req.user = await User.findById(decoded.id).select('-password');
+    const excludeString = fieldsToExclude.map(f => `-${f}`).join(' ');
 
-    if (!req.user) {
+    const user = await User.findById(decoded.id).select(excludeString);
+
+    if (!user) {
       return res.status(401).json({ message: 'User not found' });
     }
 
+    req.user = user;
     // 4. Move to next middleware/route
     next();
   } catch (err) {
