@@ -1,7 +1,9 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const connectDB = require('./src/config/db'); // your MongoDB connection
-const authRoutes = require('./src/routes/authRoute'); 
+const authRoute = require('./src/routes/authRoute'); 
+const profileRoute = require('./src/routes/profileRoute'); 
+
 require('dotenv').config();
 
 const app = express();
@@ -11,7 +13,9 @@ app.use(cookieParser());
 app.use(express.json());// for application/json req res
 
 // Routes
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRoute);
+app.use('/api/profile', profileRoute);
+
 
 // Connect to DB
 connectDB();

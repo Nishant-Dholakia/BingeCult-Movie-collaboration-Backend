@@ -1,5 +1,5 @@
 const User = require("../config/User");
-const bcrypt = require('bcryptjs');
+// const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 exports.registerUser = async (req, res) => {
@@ -8,6 +8,34 @@ exports.registerUser = async (req, res) => {
     {
         let { username, email, password } = req.body;
 
+        // Validate required fields
+        const missingFields = [];
+        if (!username) missingFields.push('username');
+        if (!email) missingFields.push('email');
+        if (!password) missingFields.push('password');
+        
+        if (missingFields.length > 0) {
+            return res.status(400).json({ 
+                message: "Missing required fields", 
+                fields: missingFields 
+            });
+        }
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          return res.status(400).json({ 
+                message: "Invalid email format" 
+            });
+        }
+        
+        // Check minimum password length
+        if (password.length < 6) {
+          return res.status(400).json({ 
+            message: "Password must be at least 6 characters long" 
+          });
+        }
+        
+        username = username.toLowerCase();
         const duplicate = await User.findOne({ $or: [{ username }, { email }] });
         if(duplicate) return res.status(400).json({ message: "Username or email already exists" });
 
@@ -64,64 +92,4 @@ exports.loginUser = async (req,res)=>{
 exports.logoutUser = (req, res) => {
   res.clearCookie("token");
   res.json({ message: "Logged out successfully" });
-};
-
-exports.getProfile = async (req, res) => {
-    try {
-    if (!req.user) return res.status(404).json({ message: 'User not found' });
-
-    const { username, email, displayName , contact} = req.user;
-
-    res.status(200).json({
-      message: "Profile fetched successfully",
-      user: { username, email, displayName , contact}
-    });
-  } catch(err) {
-      res.status(500).json({message:"Error : " + err.message});
-  }
-};
-
-const User = require('../models/User');
-
-exports.updateProfile = async (req, res) => {
-  try {
-    if (!req.user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    console.log("req.body:", req.body);
-
-    const allowedFields = ['username', 'email', 'displayName', 'avatar', 'contact'];
-
-    const updates = {};
-    allowedFields.forEach(field => {
-      if (req.body[field] !== undefined) {
-        // Special handling for contact so partial updates work
-        if (field === 'contact' && typeof req.body.contact === 'object') {
-          updates.contact = {
-            ...req.user.contact?.toObject?.(), // keep existing values
-            ...req.body.contact                // overwrite with new ones
-          };
-        } else {
-          updates[field] = req.body[field];
-        }
-      }
-    });
-
-    const updatedUser = await User.findByIdAndUpdate(
-      req.user._id,
-      { $set: updates },
-      { new: true, runValidators: true }
-    ).select('-password');
-
-    res.status(200).json({
-      success: true,
-      message: "Profile updated successfully",
-      user: updatedUser
-    });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Error: " + err.message });
-  }
 };

@@ -24,10 +24,14 @@ const userSchema = new mongoose.Schema({
     trim:true
     },
     contact: {
-      countryCode: { type: String, match: /^\+\d{1,4}$/ , default:"+91"}, // like +91, +1, etc.
-      number: { type: String, match: /^\d{6,15}$/, default:"525255248" } // 6-15 digits
+      countryCode: { type: String, match: /^\+\d{1,4}$/}, // like +91, +1, etc.
+      number: { type: String, match: /^\d{6,15}$/} // 6-15 digits
   },
   avatar: String, // profile picture URL
+  isActive : {
+    type : Boolean,
+    default : true,
+  },
   groups: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Group' // Reference to Group model
