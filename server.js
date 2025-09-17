@@ -1,21 +1,29 @@
-const express = require('express');
-const cookieParser = require('cookie-parser');
-const connectDB = require('./src/config/db'); // your MongoDB connection
-const authRoute = require('./src/routes/authRoute'); 
-const profileRoute = require('./src/routes/profileRoute'); 
+import dotenv from 'dotenv';
+dotenv.config();
 
-require('dotenv').config();
+import express from 'express';
+import cookieParser from 'cookie-parser';
+import { connectDB } from './src/config/db.js';
+import authRoute from './src/routes/authRoute.js';
+import profileRoute from './src/routes/profileRoute.js';
+import movieRoute from './src/routes/movieRoute.js';
+import cors from 'cors';
 
 const app = express();
+const corsOptions = {
+  origin: 'http://localhost:5173',
+  credentials: true,
+};
+app.use(cors(corsOptions));
 
 // Middleware
 app.use(cookieParser());
-app.use(express.json());// for application/json req res
+app.use(express.json()); // for application/json req res
 
 // Routes
 app.use('/api/auth', authRoute);
 app.use('/api/profile', profileRoute);
-
+app.use('/api/movie', movieRoute);
 
 // Connect to DB
 connectDB();

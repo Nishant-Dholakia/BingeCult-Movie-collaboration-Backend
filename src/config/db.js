@@ -1,7 +1,9 @@
-const mongoose = require('mongoose');
-require("dotenv").config(); 
 
-const connectDB = async () => {
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+dotenv.config();
+
+export const connectDB = async () => {
   try {
     const dbUrl = process.env.MONGOOSE_URL;
     if (!dbUrl) throw new Error("MONGOOSE_URL not found in .env");
@@ -29,4 +31,3 @@ const connectDB = async () => {
   });
 };
 
-module.exports = connectDB;

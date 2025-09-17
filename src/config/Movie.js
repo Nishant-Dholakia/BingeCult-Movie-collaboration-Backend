@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from 'mongoose';
 
 const movieSchema = new mongoose.Schema({
   omdbId: {
@@ -35,7 +35,7 @@ const movieSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-module.exports = mongoose.model("Movie", movieSchema);
+export const Movie = mongoose.model("Movie", movieSchema);
 
 
 // Movie {

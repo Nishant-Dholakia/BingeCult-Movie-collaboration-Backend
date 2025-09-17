@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 // schema for comments
 const commentSchema = new mongoose.Schema({
@@ -102,7 +102,7 @@ const watchlistSchema = new mongoose.Schema({
   seriesList: [seriesListItemSchema]
 }, { timestamps: true });
 
-module.exports = mongoose.model("Watchlist", watchlistSchema);
+export const Watchlist = mongoose.model("Watchlist", watchlistSchema);
 
 
 

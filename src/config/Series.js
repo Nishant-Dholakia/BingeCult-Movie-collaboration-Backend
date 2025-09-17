@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const episodeSchema = new mongoose.Schema({
   episodeNumber: Number,
@@ -33,4 +33,4 @@ const seriesSchema = new mongoose.Schema({
   seasons: [seasonSchema]
 });
 
-module.exports = mongoose.model('Series', seriesSchema);
+export const Series = mongoose.model('Series', seriesSchema);

@@ -1,6 +1,6 @@
-const User = require('../config/User');
+import { User } from '../config/User.js';
 
-exports.getProfile = async (req, res) => {
+export const getProfile = async (req, res) => {
     try {
     if (!req.user) return res.status(404).json({ message: 'User not found' });
 
@@ -16,9 +16,13 @@ exports.getProfile = async (req, res) => {
 };
 
 
-exports.updateProfile = async (req, res) => {
+export const updateProfile = async (req, res) => {
   try {
     if (!req.user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    const upuser = await User.findById(req.user._id);
+    if (!upuser) {
       return res.status(404).json({ message: 'User not found' });
     }
 
@@ -54,7 +58,9 @@ exports.updateProfile = async (req, res) => {
     });
 
   } catch (err) {
+
     console.error(err);
     res.status(500).json({ message: "Error: " + err.message });
   }
 };
+

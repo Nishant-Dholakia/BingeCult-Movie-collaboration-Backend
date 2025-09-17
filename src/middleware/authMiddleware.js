@@ -1,7 +1,7 @@
-const jwt = require('jsonwebtoken');
-const User = require('../config/User');
+import jwt from 'jsonwebtoken';
+import { User } from '../config/User.js';
 
-module.exports = (fieldsToExclude = ['password']) => async (req, res, next) => {
+export const authMiddleware = (fieldsToExclude = ['password']) => async (req, res, next) => {
   try {
     // 1. Get token from cookies
     const token = req.cookies.token;
