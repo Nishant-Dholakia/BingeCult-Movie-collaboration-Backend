@@ -2,16 +2,13 @@ import { User } from '../config/User.js';
 
 export const getProfile = async (req, res) => {
     try {
-    if (!req.user) return res.status(404).json({ message: 'User not found' });
+  if (!req.user) return res.status(404).json({ success: false, message: 'User not found' });
 
     const { username, email, displayName , contact} = req.user;
 
-    res.status(200).json({
-      message: "Profile fetched successfully",
-      user: { username, email, displayName , contact}
-    });
+    res.status(200).json({ success: true, message: "Profile fetched successfully", user: { username, email, displayName , contact} });
   } catch(err) {
-      res.status(500).json({message:"Error : " + err.message});
+  res.status(500).json({ success: false, message:"Error : " + err.message});
   }
 };
 
@@ -19,11 +16,11 @@ export const getProfile = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     if (!req.user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
     const upuser = await User.findById(req.user._id);
     if (!upuser) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
 
     console.log("req.body:", req.body);
@@ -51,16 +48,12 @@ export const updateProfile = async (req, res) => {
       { new: true, runValidators: true }
     ).select('-password');
 
-    res.status(200).json({
-      success: true,
-      message: "Profile updated successfully",
-      user: updatedUser
-    });
+    res.status(200).json({ success: true, message: "Profile updated successfully", user: updatedUser });
 
   } catch (err) {
 
     console.error(err);
-    res.status(500).json({ message: "Error: " + err.message });
+  res.status(500).json({ success: false, message: "Error: " + err.message });
   }
 };
 

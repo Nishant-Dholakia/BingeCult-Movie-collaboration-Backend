@@ -7,6 +7,7 @@ import { connectDB } from './src/config/db.js';
 import authRoute from './src/routes/authRoute.js';
 import profileRoute from './src/routes/profileRoute.js';
 import movieRoute from './src/routes/movieRoute.js';
+import groupRoute from './src/routes/groupRoute.js';
 import cors from 'cors';
 
 const app = express();
@@ -24,6 +25,7 @@ app.use(express.json()); // for application/json req res
 app.use('/api/auth', authRoute);
 app.use('/api/profile', profileRoute);
 app.use('/api/movie', movieRoute);
+app.use('/api/group',groupRoute);
 
 // Connect to DB
 connectDB();

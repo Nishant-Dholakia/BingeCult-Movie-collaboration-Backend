@@ -1,12 +1,13 @@
 import jwt from 'jsonwebtoken';
 import { User } from '../config/User.js';
 
+
 export const authMiddleware = (fieldsToExclude = ['password']) => async (req, res, next) => {
   try {
     // 1. Get token from cookies
     const token = req.cookies.token;
     if (!token) {
-      return res.status(401).json({ message: 'Not authorized, no token' });
+      return res.status(401).json({ success: false, message: 'Not authorized, no token' });
     }
 
     // 2. Verify token
@@ -18,7 +19,7 @@ export const authMiddleware = (fieldsToExclude = ['password']) => async (req, re
     const user = await User.findById(decoded.id).select(excludeString);
 
     if (!user) {
-      return res.status(401).json({ message: 'User not found' });
+      return res.status(401).json({ success: false, message: 'User not found' });
     }
 
     req.user = user;
@@ -26,6 +27,6 @@ export const authMiddleware = (fieldsToExclude = ['password']) => async (req, re
     next();
   } catch (err) {
     console.error(err);
-    res.status(401).json({ message: 'Invalid or expired token' });
+  res.status(401).json({ success: false, message: 'Invalid or expired token' });
   }
 };

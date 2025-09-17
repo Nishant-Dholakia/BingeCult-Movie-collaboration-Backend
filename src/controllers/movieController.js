@@ -24,40 +24,21 @@ export const getTrendingMovies = async (req, res) => {
 
         return response.data;
     }));
-    res.status(200).json(trendingMovies);
+  res.status(200).json({ success: true, data: trendingMovies });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed to fetch trending movies" });
+  res.status(500).json({ success: false, error: "Failed to fetch trending movies" });
   }
 };
 
 
-export const getMovieDetailsByID = async (req, res) => {
-    try{
-        const id = req.params.id;
-        if (!id) {
-            return res.status(400).json({ error: "Movie id is required" });
-        }
-        // console.log(omdbapi);
-        const response = await axios.get(omdbapi, {
-            params: {
-                apikey: process.env.OMDB_API_KEY, 
-                i: id,                              // the IMDB ID
-            }
-        });
-        res.status(200).json(response.data);
-    } catch (error) {
-        console.error("Error fetching movie details:", error.message);
-        return res.status(500).json({ error: "Failed to fetch movie details" });
-    }
-};
 
 export const searchMovies = async (req, res) => {
   try {
     const { name, type } = req.query;
 
     if (!name) {
-      return res.status(400).json({ error: "Movie name is required" });
+  return res.status(400).json({ success: false, error: "Movie name is required" });
     }
 
     const response = await axios.get(omdbapi, {
@@ -72,14 +53,34 @@ export const searchMovies = async (req, res) => {
     const data = response.data;
 
     if (data.Response === "False") {
-      return res.status(404).json({ error: data.Error });
+  return res.status(404).json({ success: false, error: data.Error });
     }
 
-    res.status(200).json(data);
+  res.status(200).json({ success: true, data });
   } catch (e) {
     console.error("Error while fetching movies:", e.message);
-    res.status(500).json({ error: "Something went wrong. Try again later." });
+  res.status(500).json({ success: false, error: "Something went wrong. Try again later." });
   }
 };
 
 
+
+export const getMovieDetailsByID = async (req, res) => {
+    try{
+        const id = req.params.id;
+        if (!id) {
+            return res.status(400).json({ success: false, error: "Movie id is required" });
+        }
+        // console.log(omdbapi);
+        const response = await axios.get(omdbapi, {
+            params: {
+                apikey: process.env.OMDB_API_KEY, 
+                i: id,                              // the IMDB ID
+            }
+        });
+  res.status(200).json({ success: true, data: response.data });
+    } catch (error) {
+        console.error("Error fetching movie details:", error.message);
+  return res.status(500).json({ success: false, error: "Failed to fetch movie details" });
+    }
+};

@@ -32,6 +32,10 @@ const userSchema = new mongoose.Schema({
     type : Boolean,
     default : true,
   },
+  // friends: [{
+  //   type: mongoose.Schema.Types.ObjectId,
+  //   ref: 'User' // Reference to User model
+  // }],
   groups: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Group' // Reference to Group model
