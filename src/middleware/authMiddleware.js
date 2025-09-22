@@ -4,6 +4,7 @@ import { User } from '../config/User.js';
 
 export const authMiddleware = (fieldsToExclude = ['password']) => async (req, res, next) => {
   try {
+    console.log("Auth middleware invoked");
     // 1. Get token from cookies
     const token = req.cookies.token;
     if (!token) {
@@ -23,6 +24,7 @@ export const authMiddleware = (fieldsToExclude = ['password']) => async (req, re
     }
 
     req.user = user;
+    console.log("User authenticated:");
     // 4. Move to next middleware/route
     next();
   } catch (err) {

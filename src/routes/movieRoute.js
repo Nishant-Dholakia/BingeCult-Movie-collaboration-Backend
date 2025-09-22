@@ -4,7 +4,7 @@ import { getTrendingMovies, getMovieDetailsByID, searchMovies } from '../control
 const router = express.Router();
 
 router.get('/trending', getTrendingMovies);
-router.get('/details/:id', getMovieDetailsByID);
+router.get('/details', getMovieDetailsByID);
 router.get('/search',searchMovies);
 
 export default router;

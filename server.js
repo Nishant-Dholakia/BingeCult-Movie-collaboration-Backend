@@ -8,6 +8,8 @@ import authRoute from './src/routes/authRoute.js';
 import profileRoute from './src/routes/profileRoute.js';
 import movieRoute from './src/routes/movieRoute.js';
 import groupRoute from './src/routes/groupRoute.js';
+import watchlistRoute from './src/routes/watchlistRoute.js';
+import userRoute from './src/routes/userRoutes.js';
 import cors from 'cors';
 
 const app = express();
@@ -25,7 +27,10 @@ app.use(express.json()); // for application/json req res
 app.use('/api/auth', authRoute);
 app.use('/api/profile', profileRoute);
 app.use('/api/movie', movieRoute);
-app.use('/api/group',groupRoute);
+app.use('/api/groups',groupRoute);
+app.use('/api/watchlist',watchlistRoute);
+app.use('/api/user',userRoute);
+
 
 // Connect to DB
 connectDB();

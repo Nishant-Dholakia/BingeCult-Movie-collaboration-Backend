@@ -61,7 +61,7 @@ export const loginUser = async (req, res) => {
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
-  res.status(200).json({ success: true, message: 'Login successful', user: { username: user.username, email: user.email } });
+  res.status(200).json({ success: true, message: 'Login successful', user: {id:user._id, username: user.username, email: user.email } });
 };
 
 export const logoutUser = (req, res) => {

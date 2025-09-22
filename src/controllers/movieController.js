@@ -53,10 +53,10 @@ export const searchMovies = async (req, res) => {
     const data = response.data;
 
     if (data.Response === "False") {
-  return res.status(404).json({ success: false, error: data.Error });
+      return res.status(404).json({ success: false, error: data.Error });
     }
 
-  res.status(200).json({ success: true, data });
+  res.status(200).json({ success: true,message:"Movies fetched successfully", data });
   } catch (e) {
     console.error("Error while fetching movies:", e.message);
   res.status(500).json({ success: false, error: "Something went wrong. Try again later." });
@@ -67,7 +67,7 @@ export const searchMovies = async (req, res) => {
 
 export const getMovieDetailsByID = async (req, res) => {
     try{
-        const id = req.params.id;
+        const { id } = req.body;
         if (!id) {
             return res.status(400).json({ success: false, error: "Movie id is required" });
         }
