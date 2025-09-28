@@ -88,7 +88,8 @@ const seriesListItemSchema = new mongoose.Schema({
     ref: 'Series',
     required: true
   },
-  episodeProgress: [episodeProgressSchema]
+  episodeProgress: { type: [episodeProgressSchema], default: [] }
+
 }, { _id: false });
 
 //  Final Watchlist Schema

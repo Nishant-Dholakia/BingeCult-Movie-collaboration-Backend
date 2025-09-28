@@ -72,8 +72,9 @@ export const logoutUser = (req, res) => {
 
 export const verifyRequest = (req, res) => {
   const user = {
-    username : req.user.username,
-    email : req.user.email
+    id: req.user._id,
+    username: req.user.username,
+    email: req.user.email
   };
   res.status(200).json({ success: true, user });
 }

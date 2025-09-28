@@ -212,52 +212,162 @@ function mapOmdbToMovieSchema(omdb) {
     genre: omdb.Genre ? omdb.Genre.split(",").map(g => g.trim()) : [],
     poster: omdb.Poster && omdb.Poster !== "N/A" ? omdb.Poster : "",
     runtime: omdb.Runtime && omdb.Runtime !== "N/A" ? omdb.Runtime : "00:00:00",
-    type: omdb.Type === "series" ? "movie" : omdb.Type || "movie" // fallback to "movie"
+    type: omdb.Type || "movie" 
   };
+}
+
+async function fetchSeasons(imdbID, totalSeasons) {
+  const apiKey = process.env.OMDB_API_KEY;
+  const seasons = [];
+
+  for (let seasonNum = 1; seasonNum <= totalSeasons; seasonNum++) {
+    try {
+      // fetch season overview
+      const seasonResp = await axios.get(omdbapi, {
+        params: { apikey: apiKey, i: imdbID, Season: seasonNum }
+      });
+
+      const seasonData = seasonResp.data;
+      if (!seasonData || !seasonData.Episodes) {
+        console.warn(`No episodes for season ${seasonNum}`);
+        continue;
+      }
+
+      // fetch each episode in detail
+      const episodes = await Promise.all(
+        seasonData.Episodes.map(async ep => {
+          try {
+            const epResp = await axios.get(omdbapi, {
+              params: { apikey: apiKey, i: ep.imdbID }
+            });
+            const epData = epResp.data || {};
+
+            return {
+              episodeNumber: Number(epData.Episode) || Number(ep.Episode) || 0,
+              title: epData.Title || ep.Title || "Unknown",
+              imdbID: epData.imdbID || ep.imdbID,
+              imdbRating: epData.imdbRating || "N/A",
+              released: epData.Released || "N/A",
+              runtime: epData.Runtime || "N/A",
+              plot: epData.Plot || "N/A",
+              poster: epData.Poster || "",
+              genre: epData.Genre ? epData.Genre.split(",").map(g => g.trim()) : []
+            };
+          } catch (epErr) {
+            console.error(`Episode fetch failed (${ep.imdbID}):`, epErr.message);
+            return {
+              episodeNumber: Number(ep.Episode) || 0,
+              title: ep.Title || "Unknown",
+              imdbID: ep.imdbID,
+              imdbRating: "N/A",
+              released: ep.Released || "N/A",
+              runtime: "N/A",
+              plot: "N/A",
+              poster: "",
+              genre: []
+            };
+          }
+        })
+      );
+
+      seasons.push({
+        seasonNumber: seasonNum,
+        episodes
+      });
+    } catch (seasonErr) {
+      console.error(`Season fetch failed (${seasonNum}):`, seasonErr.message);
+    }
+  }
+
+  return seasons;
+}
+
+// --- normalize full series object into schema format ---
+export async function mapOmdbToSeriesSchema(omdb) {
+  try {
+    const totalSeasons = Number(omdb.totalSeasons || 0);
+    const seasons = await fetchSeasons(omdb.imdbID, totalSeasons);
+
+    return {
+      omdbId: omdb.imdbID,
+      title: omdb.Title,
+      poster: omdb.Poster || "",
+      year: omdb.Year,
+      genre: omdb.Genre ? omdb.Genre.split(",").map(g => g.trim()) : [],
+      totalSeasons,
+      type: "series",
+      seasons
+    };
+  } catch (err) {
+    console.error("mapOmdbToSeriesSchema error:", err.message);
+    throw new Error("Failed to build series object");
+  }
 }
 
 export const addToWatchlists = async (req, res) => {
   try {
     let { groupIds, item } = req.body;
+
     if (!Array.isArray(groupIds) || groupIds.length === 0) {
-      return res.status(400).json({ success:false, message: "groupIds is required", data:null });
+      return res
+        .status(400)
+        .json({ success: false, message: "groupIds is required", data: null });
     }
     if (!item || !item.imdbID || !item.Type) {
-      return res.status(400).json({ success:false, message: "item (with imdbID and type) required", data:null });
+      return res
+        .status(400)
+        .json({ success: false, message: "item (with imdbID and type) required", data: null });
     }
-    const response = await axios.get(omdbapi,{
-                params: {
-                    apikey: process.env.OMDB_API_KEY,
-                    i: item.imdbID,
-                }
-            });
-            console.log("OMDB response:", response.data);
-    item = response.data;
-    // normalize
+
     const type = item.Type === "series" ? "series" : "movie";
     let savedItem = null;
-item = mapOmdbToMovieSchema(item);
-    // Upsert in Movie/Series collection
+
+    // Step 1: Check if it already exists
     if (type === "movie") {
-      savedItem = await Movie.findOne({ omdbId: item.omdbId });
-      if (!savedItem) {
-        
-        savedItem = await Movie.create(item);
-      }
+      savedItem = await Movie.findOne({ omdbId: item.imdbID });
     } else {
-      savedItem = await Series.findOne({ omdbId: item.omdbId });
-      if (!savedItem) {
-        savedItem = await Series.create(item);
+      savedItem = await Series.findOne({ omdbId: item.imdbID });
+    }
+
+    //  Step 2: If not found, fetch from OMDB and map
+    if (!savedItem) {
+      try {
+        console.log("\n\nFetching from OMDB for adding to watchlist:\n", item.imdbID);
+        const response = await axios.get(omdbapi, {
+          params: {
+            apikey: process.env.OMDB_API_KEY,
+            i: item.imdbID,
+          },
+        });
+
+        const omdbData = response.data;
+        if (!omdbData || omdbData.Response === "False") {
+          return res
+            .status(404)
+            .json({ success: false, message: "OMDB item not found", data: null });
+        }
+
+        if (type === "movie") {
+          const mappedMovie = mapOmdbToMovieSchema(omdbData);
+          savedItem = await Movie.create(mappedMovie);
+        } else {
+          const mappedSeries = await mapOmdbToSeriesSchema(omdbData); // async
+          savedItem = await Series.create(mappedSeries);
+        }
+      } catch (apiErr) {
+        console.error("OMDB fetch error:", apiErr.message);
+        return res
+          .status(502)
+          .json({ success: false, message: "Failed to fetch from OMDB", data: null });
       }
     }
 
-    // For each group id: add to watchlist (atomic-ish). Use $addToSet to avoid duplicates.
+    // Step 3: Add to watchlists for groups
     const results = [];
     for (const gid of groupIds) {
-      // optional: verify group exists and user is admin — do this before calling endpoint if necessary
       const groupExists = await Group.exists({ _id: gid });
       if (!groupExists) {
-        results.push({ groupId: gid, success:false, reason: "group not found" });
+        results.push({ groupId: gid, success: false, reason: "group not found" });
         continue;
       }
 
@@ -268,23 +378,26 @@ item = mapOmdbToMovieSchema(item);
           { upsert: true, new: true }
         );
       } else {
-        // initialize empty episodeProgress for now — you can compute per group members if needed elsewhere
         await Watchlist.findOneAndUpdate(
           { groupId: gid },
           { $addToSet: { seriesList: { seriesId: savedItem._id } } },
           { upsert: true, new: true }
         );
       }
+
       results.push({ groupId: gid, success: true });
     }
 
     return res.json({
       success: true,
       message: "Added item to watchlists",
-      data: { item: savedItem, results }
+      data: { item: savedItem, results },
     });
   } catch (err) {
     console.error("addToWatchlists error:", err);
-    return res.status(500).json({ success:false, message: "Server error", data: null });
+    return res
+      .status(500)
+      .json({ success: false, message: "Server error", data: null });
   }
 };
+

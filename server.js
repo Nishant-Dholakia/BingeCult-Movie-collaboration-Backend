@@ -10,6 +10,7 @@ import movieRoute from './src/routes/movieRoute.js';
 import groupRoute from './src/routes/groupRoute.js';
 import watchlistRoute from './src/routes/watchlistRoute.js';
 import userRoute from './src/routes/userRoutes.js';
+import progressRoute from './src/routes/progressRoute.js';
 import cors from 'cors';
 
 const app = express();
@@ -30,6 +31,8 @@ app.use('/api/movie', movieRoute);
 app.use('/api/groups',groupRoute);
 app.use('/api/watchlist',watchlistRoute);
 app.use('/api/user',userRoute);
+app.use('/api/progress',progressRoute);
+
 
 
 // Connect to DB

@@ -4,9 +4,18 @@ const episodeSchema = new mongoose.Schema({
   episodeNumber: Number,
   title: String,
   imdbID: String,
+  imdbRating: String,
   released: String,
   runtime: String,
-  plot: String
+  plot: String,
+  poster: {
+  type: String,
+  default: "" // fallback in case of missing poster
+  },
+  genre: [{
+    type: String,
+    trim: true
+  }],
 }, { _id: false });
 
 const seasonSchema = new mongoose.Schema({

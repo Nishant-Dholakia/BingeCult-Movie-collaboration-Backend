@@ -36,7 +36,7 @@ export const getTrendingMovies = async (req, res) => {
 export const searchMovies = async (req, res) => {
   try {
     const { name, type } = req.query;
-
+    console.log("Searching movies with name:", name, "and type:", type);
     if (!name) {
   return res.status(400).json({ success: false, error: "Movie name is required" });
     }
@@ -62,8 +62,6 @@ export const searchMovies = async (req, res) => {
   res.status(500).json({ success: false, error: "Something went wrong. Try again later." });
   }
 };
-
-
 
 export const getMovieDetailsByID = async (req, res) => {
     try{

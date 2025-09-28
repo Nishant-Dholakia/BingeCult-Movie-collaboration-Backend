@@ -154,9 +154,50 @@ export const addMember = async (req, res) => {
     group.members.push(user._id);
     await group.save();
 
+    const requser = await User.findById(user._id);
+    requser.groups.push(group._id);
+    await requser.save();
+
     res.json({ message: "Member added successfully", member: user, success: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error", success: false });
+  }
+};
+
+
+export const updateProgress = async (req, res) => {
+  const { groupId, itemId, itemType, userId, completed } = req.body;
+
+  try {
+    const group = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ success: false, message: "Group not found" });
+
+    if (itemType === "movie") {
+      const movie = group.watchlist.movieList.find((m) => m.movieId.toString() === itemId);
+      if (!movie) return res.status(404).json({ success: false, message: "Movie not in watchlist" });
+
+      const existing = movie.userProgress.find((up) => up.userId.toString() === userId);
+      if (existing) {
+        existing.completed = completed;
+      } else {
+        movie.userProgress.push({ userId, completed, pollRating: null, reactions: [] });
+      }
+    } else {
+      const series = group.watchlist.seriesList.find((s) => s.seriesId.toString() === itemId);
+      if (!series) return res.status(404).json({ success: false, message: "Series not in watchlist" });
+
+      const existing = series.episodeProgress.find((ep) => ep.userId.toString() === userId);
+      if (existing) {
+        existing.completed = completed;
+      } else {
+        series.episodeProgress.push({ userId, completed, episodes: [] });
+      }
+    }
+
+    await group.save();
+    return res.json({ success: true, message: "Progress updated" });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
