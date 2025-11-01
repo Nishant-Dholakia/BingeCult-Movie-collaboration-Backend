@@ -1,5 +1,35 @@
 import { User } from '../config/User.js';
 import jwt from 'jsonwebtoken';
+import { OAuth2Client } from "google-auth-library";
+
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+const issueAuthToken = (res, user, message = "Login successful") => {
+  const token = jwt.sign(
+    { id: user._id, username: user.username },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
+  );
+
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+
+  return res.status(200).json({
+    success: true,
+    message,
+    user: {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+    },
+  });
+};
+
 
 export const registerUser = async (req, res) => {
   try {
@@ -50,19 +80,63 @@ export const loginUser = async (req, res) => {
   const isMatch = await user.matchPassword(password);
   if (!isMatch) return res.status(400).json({ success: false, message: 'Invalid email or password...' });
 
-  const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
-  });
+  issueAuthToken(res, user, "Login successful");
 
-  res.cookie('token', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
-
-  res.status(200).json({ success: true, message: 'Login successful', user: {id:user._id, username: user.username, email: user.email } });
 };
+
+export const googleLogin = async (req, res) => {
+    try {
+      console.log("Google login invoked");
+
+      const { id_token } = req.body;
+      if (!id_token)
+        return res
+          .status(400)
+          .json({ success: false, message: "Missing Google ID token" });
+
+      // Verify Google ID token
+      const ticket = await client.verifyIdToken({
+        idToken: id_token,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+
+      const { sub, email, name, picture } = payload;
+
+      // 1. Find by Google ID
+      let user = await User.findOne({ googleId: sub });
+
+      // 2. If no Google ID user, try linking by email
+      if (!user && email) {
+        user = await User.findOne({ email });
+        if (user) {
+          user.googleId = sub;
+          user.picture = picture || user.picture;
+          await user.save();
+        }
+      }
+
+      // 3. If still no user, create new
+      if (!user) {
+        user = new User({
+          username: name,
+          email,
+          googleId: sub,
+          password: sub,
+          picture,
+        });
+        user.save()
+      }
+
+      // 4. Issue JWT cookie + response
+      issueAuthToken(res, user, "Google login successful");
+    } catch (err) {
+      console.error("Google login error:", err);
+      res
+        .status(500)
+        .json({ success: false, message: "Google login failed, try again" });
+    }
+  };
 
 export const logoutUser = (req, res) => {
   res.clearCookie('token');
@@ -78,3 +152,16 @@ export const verifyRequest = (req, res) => {
   };
   res.status(200).json({ success: true, user });
 }
+  
+    // const token = jwt.sign({ id: user._id, username: user.username }, process.env.JWT_SECRET, {
+    //   expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    // });
+  
+    // res.cookie('token', token, {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === 'production',
+    //   sameSite: 'strict',
+    //   maxAge: 7 * 24 * 60 * 60 * 1000,
+    // });
+  
+    // res.status(200).json({ success: true, message: 'Login successful', user: {id:user._id, username: user.username, email: user.email } });

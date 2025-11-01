@@ -19,18 +19,23 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-    displayName: {
+  googleId: {
     type: String,
-    trim:true
-    },
-    contact: {
-      countryCode: { type: String, match: /^\+\d{1,4}$/}, // like +91, +1, etc.
-      number: { type: String, match: /^\d{6,15}$/} // 6-15 digits
+    default: " "
+  }, // for Google OAuth users
+
+  displayName: {
+    type: String,
+    trim: true
+  },
+  contact: {
+    countryCode: { type: String, match: /^\+\d{1,4}$/ }, // like +91, +1, etc.
+    number: { type: String, match: /^\d{6,15}$/ } // 6-15 digits
   },
   avatar: String, // profile picture URL
-  isActive : {
-    type : Boolean,
-    default : true,
+  isActive: {
+    type: Boolean,
+    default: true,
   },
   // friends: [{
   //   type: mongoose.Schema.Types.ObjectId,
@@ -40,8 +45,8 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Group' // Reference to Group model
   }],
-  
-},{ timestamps: true });
+
+}, { timestamps: true });
 
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next(); // only hash if password is new/modified
@@ -51,7 +56,7 @@ userSchema.pre('save', async function (next) {
 });
 
 userSchema.methods.matchPassword = async function (enteredPassword) {
-  console.log("password ",this.password);
+  console.log("password ", this.password);
   return await bcrypt.compare(enteredPassword, this.password);
 };
 

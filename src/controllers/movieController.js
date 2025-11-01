@@ -1,33 +1,40 @@
 import axios from 'axios';
 import { omdbapi, traktapi } from '../api/axios.js';
-
+import {redisClient} from '../config/redisClient.js'
 export const getTrendingMovies = async (req, res) => {
-    console.log("Fetching trending movies from Trakt API");
+  console.log("Fetching trending movies with caching");
+
   try {
-    const response = await traktapi.get("/movies/trending", {
-                    params: { limit: 10 },
-                    });
+    // 1. Check cache
+    const cached = await redisClient.get("trending_movies");
+    if (cached) {
+      console.log("Serving from Redis cache");
+      // console.log(JSON.parse(cached));
+      return res.status(200).json({ success: true,message:"Fetched from redis", data: JSON.parse(cached) });
+    }
 
-    var trendingMovies = response.data;
-    trendingMovies = await Promise.all(trendingMovies.map(async item => {
-        
+    // 2. Fetch from Trakt API
+    const response = await traktapi.get("/movies/trending", { params: { limit: 20 } });
+    let trendingMovies = response.data;
+
+    // 3. Fetch OMDB details
+    trendingMovies = await Promise.all(
+      trendingMovies.map(async (item) => {
         const imdbid = item.movie.ids.imdb;
-        // console.log("Fetching OMDB data for IMDB ID:", imdbid);
-        const response = await axios.get(omdbapi, {
-            params: {
-                apikey: process.env.OMDB_API_KEY, 
-                i: imdbid,                              
-            }
+        const omdbResponse = await axios.get(omdbapi, {
+          params: { apikey: process.env.OMDB_API_KEY, i: imdbid },
         });
-        
-        // console.log("OMDB response:", response.data);
+        return omdbResponse.data;
+      })
+    );
 
-        return response.data;
-    }));
-  res.status(200).json({ success: true, data: trendingMovies });
+    // 4. Store in Redis with TTL = 24 hours (86400 seconds)
+    await redisClient.setEx("trending_movies", 86400, JSON.stringify(trendingMovies));
+
+    res.status(200).json({ success: true, message:"fetched from api", data: trendingMovies });
   } catch (err) {
-    console.error(err);
-  res.status(500).json({ success: false, error: "Failed to fetch trending movies" });
+    console.error("Error in trending movies:", err);
+    res.status(500).json({ success: false, error: "Failed to fetch trending movies" });
   }
 };
 
